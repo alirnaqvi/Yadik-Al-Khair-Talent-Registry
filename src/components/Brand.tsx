@@ -24,14 +24,28 @@ export function Brand({
       className="inline-flex items-center gap-2.5 rounded-lg"
       aria-label={`${SITE.name} home`}
     >
-      <BrandMark />
+      {/* The logo is green on white, so on dark backgrounds it sits on a white tile. */}
+      <span
+        className={clsx(
+          "flex shrink-0 items-center",
+          tone === "dark" && "rounded-lg bg-white px-2.5 py-1.5"
+        )}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/yadik-al-khair-logo.png"
+          alt={SITE.brand}
+          width={201}
+          height={61}
+          className="h-8 w-auto"
+        />
+      </span>
       <span
         className={clsx(
           "whitespace-nowrap font-display text-[17px] font-bold leading-none tracking-tight",
           tone === "dark" ? "text-white" : "text-pine-900"
         )}
       >
-        {SITE.brand}
         <span
           className={clsx(
             "font-medium",
