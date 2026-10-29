@@ -2,12 +2,19 @@
 // lives here, so it can be edited in one place without touching the pages.
 
 export const SITE = {
-  name: "BK Talent Registry",
-  shortName: "BK",
+  // The full name, used in page titles and link previews.
+  name: "Yadik al Khair - Talent Registry",
+  // The wordmark in the header, and the part after it in smaller, lighter type.
+  brand: "Yadik al Khair",
+  brandTail: "Talent Registry",
+  // Two letters shown in the link-preview image.
+  monogram: "YK",
 
   owner: {
     name: "Bilal Kazmi",
     firstName: "Bilal",
+    // Shown in place of his photo if the photo is removed.
+    initials: "BK",
     // One short line under his name (also shown on the link preview image).
     // His full LinkedIn headline is too long for this spot, so this is the
     // short version.
@@ -30,7 +37,7 @@ export const SITE = {
     ],
     linkedin: "https://www.linkedin.com/in/muhammadbillalkazmi/",
     // Optional: put a square photo in /public (for example /public/bilal.jpg)
-    // and set this to "/bilal.jpg". Leave empty to show the BK monogram.
+    // and set this to "/bilal.jpg". Leave empty to show his initials.
     photo: "/bilal.jpg",
   },
 
@@ -46,17 +53,19 @@ export const SITE = {
     "Send your CV to Bilal Kazmi once. It stays on file and is considered whenever a role in your field opens.",
 } as const;
 
-// Fields shown as quick picks on the landing page and at the top of the form.
-// Each must match an entry in SUGGESTED_DOMAINS so the admin filter stays tidy.
+// Professions shown as quick picks on the landing page and at the top of the
+// form. Each must match an entry in PROFESSIONS (src/lib/constants.ts).
 export const FEATURED_DOMAINS = [
   "Information Technology",
   "Software Engineering",
   "Data & Analytics",
+  "Artificial Intelligence",
+  "Cybersecurity",
   "Banking & Financial Services",
   "Finance & Accounting",
   "Human Resources",
   "Sales & Business Development",
   "Marketing & Communications",
-  "Customer Experience / Operations",
-  "Project Management",
+  "Project & Programme Management",
+  "Customer Experience & Service",
 ] as const;

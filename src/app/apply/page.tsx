@@ -27,8 +27,8 @@ export default function ApplyPage({
             Send your CV
           </h1>
           <p className="mt-3 max-w-[58ch] text-lg leading-relaxed text-muted">
-            About two minutes. Only your name, email, field and CV are
-            required, marked with an asterisk.
+            About two minutes. Fields marked with an asterisk are required;
+            the rest are optional.
           </p>
         </div>
         <UploadForm initialDomain={initialDomain} />

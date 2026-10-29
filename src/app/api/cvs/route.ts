@@ -28,6 +28,11 @@ export async function POST(request: NextRequest) {
       email: formData.get("email")?.toString() ?? "",
       phone: formData.get("phone")?.toString() ?? "",
       domain: formData.get("domain")?.toString() ?? "",
+      industry: formData.get("industry")?.toString() ?? "",
+      degree: formData.get("degree")?.toString() ?? "",
+      gender: formData.get("gender")?.toString() ?? "",
+      age: formData.get("age")?.toString() ?? "",
+      pwd: formData.get("pwd")?.toString() ?? "",
       experienceYears: formData.get("experienceYears")?.toString() ?? "",
       currentRole: formData.get("currentRole")?.toString() ?? "",
       currentCompany: formData.get("currentCompany")?.toString() ?? "",
@@ -109,6 +114,11 @@ export async function POST(request: NextRequest) {
         email: data.email,
         phone: data.phone || null,
         domain: data.domain,
+        industry: data.industry,
+        degree: data.degree,
+        gender: data.gender,
+        age: data.age,
+        pwd: data.pwd,
         experienceYears: data.experienceYears ?? null,
         currentRole: data.currentRole || null,
         currentCompany: data.currentCompany || null,
@@ -151,7 +161,28 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const domainsParam = searchParams.get("domains"); // comma-separated
+    // Multi-value filters arrive as comma-separated lists.
+    const list = (name: string) =>
+      (searchParams.get(name) ?? "")
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+    const domains = list("domains"); // professions
+    const industries = list("industries");
+    const degrees = list("degrees");
+    const genders = list("genders");
+    const locations = list("locations");
+
+    const intParam = (name: string) => {
+      const raw = searchParams.get(name);
+      if (raw === null || raw.trim() === "") return undefined;
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= 0 && n <= 120 ? n : undefined;
+    };
+    const ageMin = intParam("ageMin");
+    const ageMax = intParam("ageMax");
+    const pwdOnly = searchParams.get("pwd") === "1";
+
     const search = searchParams.get("search")?.trim();
     const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
     const pageSize = Math.min(
@@ -160,26 +191,46 @@ export async function GET(request: NextRequest) {
     );
     const sort = searchParams.get("sort") ?? "newest";
 
-    const domains = domainsParam
-      ? domainsParam.split(",").map((d) => d.trim()).filter(Boolean)
-      : [];
+    // Every active filter narrows the result, so they are combined with AND.
+    const and: any[] = [];
 
-    const where: any = {};
+    if (domains.length > 0) and.push({ domain: { in: domains } });
+    if (industries.length > 0) and.push({ industry: { in: industries } });
+    if (degrees.length > 0) and.push({ degree: { in: degrees } });
+    if (genders.length > 0) and.push({ gender: { in: genders } });
+    if (pwdOnly) and.push({ pwd: true });
 
-    if (domains.length > 0) {
-      where.domain = { in: domains };
+    // Locations are typed by candidates, so "islamabad" and "Islamabad" must match.
+    if (locations.length > 0) {
+      and.push({
+        OR: locations.map((l) => ({ city: { equals: l, mode: "insensitive" } })),
+      });
+    }
+
+    if (ageMin !== undefined || ageMax !== undefined) {
+      and.push({
+        age: {
+          ...(ageMin !== undefined ? { gte: ageMin } : {}),
+          ...(ageMax !== undefined ? { lte: ageMax } : {}),
+        },
+      });
     }
 
     if (search) {
-      where.OR = [
-        { fullName: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { skills: { contains: search, mode: "insensitive" } },
-        { currentRole: { contains: search, mode: "insensitive" } },
-        { currentCompany: { contains: search, mode: "insensitive" } },
-        { city: { contains: search, mode: "insensitive" } },
-      ];
+      and.push({
+        OR: [
+          { fullName: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { skills: { contains: search, mode: "insensitive" } },
+          { currentRole: { contains: search, mode: "insensitive" } },
+          { currentCompany: { contains: search, mode: "insensitive" } },
+          { city: { contains: search, mode: "insensitive" } },
+          { education: { contains: search, mode: "insensitive" } },
+        ],
+      });
     }
+
+    const where: any = and.length > 0 ? { AND: and } : {};
 
     const orderBy =
       sort === "oldest"

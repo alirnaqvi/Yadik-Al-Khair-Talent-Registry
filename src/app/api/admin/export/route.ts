@@ -9,13 +9,18 @@ const CSV_COLUMNS: { key: string; label: string }[] = [
   { key: "fullName", label: "Full Name" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
-  { key: "domain", label: "Domain" },
+  { key: "domain", label: "Profession" },
+  { key: "industry", label: "Industry" },
+  { key: "degree", label: "Degree" },
+  { key: "city", label: "Location" },
+  { key: "gender", label: "Gender" },
+  { key: "age", label: "Age" },
+  { key: "pwd", label: "PWD" },
   { key: "experienceYears", label: "Experience (yrs)" },
   { key: "currentRole", label: "Current Role" },
   { key: "currentCompany", label: "Current Company" },
-  { key: "education", label: "Education" },
+  { key: "education", label: "Education Details" },
   { key: "skills", label: "Skills" },
-  { key: "city", label: "City" },
   { key: "fileName", label: "CV File" },
   { key: "fileUrl", label: "CV Link" },
   { key: "createdAt", label: "Submitted On" },
@@ -23,6 +28,7 @@ const CSV_COLUMNS: { key: string; label: string }[] = [
 
 function escapeCsvValue(value: unknown): string {
   if (value === null || value === undefined) return "";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
   const str = value instanceof Date ? value.toISOString() : String(value);
   if (/[",\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
         status: 200,
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="bk-cv-export-${Date.now()}.csv"`,
+          "Content-Disposition": `attachment; filename="yadik-al-khair-cv-export-${Date.now()}.csv"`,
         },
       });
     }
@@ -124,7 +130,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="bk-cv-export-${Date.now()}.zip"`,
+        "Content-Disposition": `attachment; filename="yadik-al-khair-cv-export-${Date.now()}.zip"`,
       },
     });
   } catch (err) {

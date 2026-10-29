@@ -13,9 +13,9 @@ export function Brand({
   href?: string;
   tone?: "light" | "dark";
   suffix?: string;
-  /** Drop "Talent Registry" on phones, where the header has less room. */
+  /** Drop "- Talent Registry" on phones, where the header has less room. */
   compact?: boolean;
-  /** When "Talent Registry" hides on very narrow screens. Ignored if compact. */
+  /** When "- Talent Registry" hides on very narrow screens. Ignored if compact. */
   tailClassName?: string;
 }) {
   return (
@@ -31,7 +31,7 @@ export function Brand({
           tone === "dark" ? "text-white" : "text-pine-900"
         )}
       >
-        {SITE.shortName}{" "}
+        {SITE.brand}
         <span
           className={clsx(
             "font-medium",
@@ -39,7 +39,8 @@ export function Brand({
             tone === "dark" ? "text-pine-200" : "text-muted"
           )}
         >
-          Talent Registry
+          {" - "}
+          {SITE.brandTail}
         </span>
         {suffix && (
           <span

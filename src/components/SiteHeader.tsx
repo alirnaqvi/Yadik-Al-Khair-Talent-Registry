@@ -15,7 +15,7 @@ export function SiteHeader({
 }) {
   return (
     <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-5 py-5 sm:gap-4 sm:px-8">
-      {/* With the extra button, the narrowest phones show just the BK mark. */}
+      {/* With the extra button, the narrowest phones show just the folder mark. */}
       <Brand tailClassName={showAdmin ? "max-[374px]:hidden" : undefined} />
       <nav className="flex items-center gap-1 sm:gap-2" aria-label="Main">
         <a

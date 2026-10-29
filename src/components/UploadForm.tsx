@@ -1,6 +1,6 @@
 "use client";
 
-import { DragEvent, FormEvent, ReactNode, useEffect, useRef, useState } from "react";
+import { DragEvent, FormEvent, ReactNode, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import {
@@ -14,23 +14,34 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { Field, Input, Textarea } from "@/components/ui/Field";
+import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { RegistryCard } from "@/components/RegistryCard";
 import {
   ACCEPTED_FILE_EXTENSIONS,
+  DEGREES,
   FORM_MAX_FILE_SIZE_BYTES,
-  SUGGESTED_DOMAINS,
+  GENDERS,
+  INDUSTRIES,
+  MAX_AGE,
+  MIN_AGE,
+  PROFESSIONS,
+  SUGGESTED_LOCATIONS,
 } from "@/lib/constants";
 import { formatFileSize } from "@/lib/format";
 import { FEATURED_DOMAINS, SITE } from "@/lib/site";
 
+// "domain" is the stored name for Profession, and "city" for Location.
 const TEXT_FIELDS = [
   "fullName",
   "email",
   "phone",
   "city",
+  "gender",
+  "age",
   "domain",
+  "industry",
+  "degree",
   "experienceYears",
   "currentRole",
   "currentCompany",
@@ -48,7 +59,11 @@ const EMPTY: Values = {
   email: "",
   phone: "",
   city: "",
+  gender: "",
+  age: "",
   domain: "",
+  industry: "",
+  degree: "",
   experienceYears: "",
   currentRole: "",
   currentCompany: "",
@@ -62,7 +77,11 @@ const FOCUS_ORDER: FieldName[] = [
   "email",
   "phone",
   "city",
+  "gender",
+  "age",
   "domain",
+  "industry",
+  "degree",
   "experienceYears",
   "currentRole",
   "currentCompany",
@@ -70,6 +89,9 @@ const FOCUS_ORDER: FieldName[] = [
   "skills",
   "cv",
 ];
+
+const inList = (list: readonly string[], value: string) =>
+  list.some((o) => o.toLowerCase() === value.toLowerCase());
 
 const MAX_MB = Math.round(FORM_MAX_FILE_SIZE_BYTES / (1024 * 1024));
 const ALLOWED_EXTENSIONS = ACCEPTED_FILE_EXTENSIONS.split(",");
@@ -88,8 +110,24 @@ function validateText(name: TextField, raw: string): string | undefined {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value))
         return "Enter a valid email address, like name@example.com";
       break;
+    case "city":
+      if (value.length < 2) return "Enter your location, like Islamabad";
+      break;
+    case "gender":
+      if (!inList(GENDERS, value)) return "Choose a gender option";
+      break;
+    case "age":
+      if (!/^\d{1,3}$/.test(value) || Number(value) < MIN_AGE || Number(value) > MAX_AGE)
+        return `Enter your age as a number between ${MIN_AGE} and ${MAX_AGE}`;
+      break;
     case "domain":
-      if (value.length < 2) return "Choose a field or type your own";
+      if (!inList(PROFESSIONS, value)) return "Choose your profession from the list";
+      break;
+    case "industry":
+      if (!inList(INDUSTRIES, value)) return "Choose your industry from the list";
+      break;
+    case "degree":
+      if (!inList(DEGREES, value)) return "Choose your highest degree from the list";
       break;
     case "experienceYears":
       if (value === "") break;
@@ -118,27 +156,18 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [values, setValues] = useState<Values>({ ...EMPTY, domain: initialDomain });
+  // Only a link from the landing page may pre-select a profession, and only a listed one.
+  const startingDomain = PROFESSIONS.find(
+    (p) => p.toLowerCase() === initialDomain.trim().toLowerCase()
+  );
+
+  const [values, setValues] = useState<Values>({ ...EMPTY, domain: startingDomain ?? "" });
+  const [pwd, setPwd] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
-  const [domainOptions, setDomainOptions] = useState<string[]>(SUGGESTED_DOMAINS);
   const [dragActive, setDragActive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-
-  useEffect(() => {
-    fetch("/api/domains")
-      .then((res) => res.json())
-      .then((data) => {
-        const merged = Array.from(
-          new Set<string>([...(data.suggested ?? []), ...(data.existing ?? [])])
-        ).sort();
-        if (merged.length) setDomainOptions(merged);
-      })
-      .catch(() => {
-        /* keep the default suggested list */
-      });
-  }, []);
 
   function setValue(name: TextField, value: string) {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -148,9 +177,9 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
 
   function handleBlur(name: TextField) {
     let value = values[name].trim().replace(/\s+/g, " ");
-    if (name === "domain" && value) {
-      // Snap to the listed spelling so "it" and "IT" don't become two filters.
-      const match = domainOptions.find(
+    if (name === "city" && value) {
+      // Snap to the listed spelling so "islamabad" and "Islamabad" don't become two filters.
+      const match = SUGGESTED_LOCATIONS.find(
         (option) => option.toLowerCase() === value.toLowerCase()
       );
       if (match) value = match;
@@ -198,6 +227,7 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
 
     const formData = new FormData();
     for (const name of TEXT_FIELDS) formData.set(name, values[name].trim());
+    formData.set("pwd", pwd ? "true" : "false");
     formData.set("cv", file as File);
 
     setSubmitting(true);
@@ -224,6 +254,7 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
             currentRole: values.currentRole.trim(),
             currentCompany: values.currentCompany.trim(),
             city: values.city.trim(),
+            degree: values.degree.trim(),
             experienceYears:
               values.experienceYears === "" ? null : Number(values.experienceYears),
             education: values.education.trim(),
@@ -248,7 +279,12 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
   const required = [
     { label: "Full name", need: "your full name", done: !validateText("fullName", values.fullName) },
     { label: "Email", need: "your email", done: !validateText("email", values.email) },
-    { label: "Field", need: "your field", done: !validateText("domain", values.domain) },
+    { label: "Profession", need: "your profession", done: !validateText("domain", values.domain) },
+    { label: "Industry", need: "your industry", done: !validateText("industry", values.industry) },
+    { label: "Degree", need: "your degree", done: !validateText("degree", values.degree) },
+    { label: "Location", need: "your location", done: !validateText("city", values.city) },
+    { label: "Gender", need: "your gender", done: !validateText("gender", values.gender) },
+    { label: "Age", need: "your age", done: !validateText("age", values.age) },
     { label: "CV", need: "your CV", done: !validateFile(file) },
   ];
   const doneCount = required.filter((r) => r.done).length;
@@ -260,6 +296,7 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
     currentRole: values.currentRole.trim(),
     currentCompany: values.currentCompany.trim(),
     city: values.city.trim(),
+    degree: values.degree.trim(),
     experienceYears:
       values.experienceYears !== "" && !validateText("experienceYears", values.experienceYears)
         ? Number(values.experienceYears)
@@ -283,9 +320,9 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
   return (
     <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-        <datalist id="domain-options">
-          {domainOptions.map((d) => (
-            <option key={d} value={d} />
+        <datalist id="location-options">
+          {SUGGESTED_LOCATIONS.map((l) => (
+            <option key={l} value={l} />
           ))}
         </datalist>
 
@@ -322,31 +359,91 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
               </Field>
             </div>
             <div data-field>
-              <Field label="City" htmlFor="city" optional>
-                <Input {...text("city")} autoComplete="address-level2" maxLength={80} />
+              <Field
+                label="Location"
+                htmlFor="city"
+                required
+                error={errors.city}
+                hint="The city you live in, or Remote / Overseas"
+              >
+                <Input
+                  {...text("city")}
+                  list="location-options"
+                  autoComplete="address-level2"
+                  aria-required
+                  maxLength={80}
+                />
               </Field>
             </div>
+            <div data-field>
+              <Field label="Gender" htmlFor="gender" required error={errors.gender}>
+                <Select {...text("gender")} aria-required>
+                  <option value="">Select</option>
+                  {GENDERS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <div data-field>
+              <Field label="Age" htmlFor="age" required error={errors.age}>
+                <Input
+                  {...text("age")}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  aria-required
+                  maxLength={2}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-line bg-pine-50/50 p-4" data-field>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                id="pwd"
+                name="pwd"
+                type="checkbox"
+                checked={pwd}
+                onChange={(e) => setPwd(e.target.checked)}
+                aria-describedby="pwd-hint"
+                className="checkbox mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-pine-900">
+                  I am a person with a disability (PWD)
+                </span>
+                <span id="pwd-hint" className="mt-1 block text-[13px] leading-snug text-muted">
+                  Optional. Tick this if you would like {SITE.owner.firstName} to consider you for
+                  roles at employers who hire people with disabilities. Leave it
+                  unticked if you prefer not to share.
+                </span>
+              </span>
+            </label>
           </div>
         </Section>
 
         <Section number={2} title="Your work">
           <div data-field>
             <Field
-              label="Field"
+              label="Profession"
               htmlFor="domain"
               required
               error={errors.domain}
-              hint="Pick one below, or type your own"
+              hint="Choose the one closest to your work, or pick a common one below"
             >
-              <Input
-                {...text("domain")}
-                list="domain-options"
-                placeholder="For example, Finance & Accounting"
-                aria-required
-                maxLength={80}
-              />
+              <Select {...text("domain")} aria-required>
+                <option value="">Select your profession</option>
+                {PROFESSIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </Select>
             </Field>
-            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Common fields">
+            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Common professions">
               {FEATURED_DOMAINS.map((d) => {
                 const active = values.domain.trim().toLowerCase() === d.toLowerCase();
                 return (
@@ -373,6 +470,42 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div data-field>
               <Field
+                label="Industry"
+                htmlFor="industry"
+                required
+                error={errors.industry}
+                hint="Where you work, or where you want to work"
+              >
+                <Select {...text("industry")} aria-required>
+                  <option value="">Select your industry</option>
+                  {INDUSTRIES.map((i) => (
+                    <option key={i} value={i}>
+                      {i}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <div data-field>
+              <Field
+                label="Highest degree"
+                htmlFor="degree"
+                required
+                error={errors.degree}
+                hint="Your highest completed or current qualification"
+              >
+                <Select {...text("degree")} aria-required>
+                  <option value="">Select your degree</option>
+                  {DEGREES.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <div data-field>
+              <Field
                 label="Years of experience"
                 htmlFor="experienceYears"
                 optional
@@ -392,7 +525,12 @@ export function UploadForm({ initialDomain = "" }: { initialDomain?: string }) {
               </Field>
             </div>
             <div data-field>
-              <Field label="Education" htmlFor="education" optional hint="Degree, institution and year">
+              <Field
+                label="Education details"
+                htmlFor="education"
+                optional
+                hint="Field of study, institution and year, like BS Computer Science, 2026"
+              >
                 <Input {...text("education")} maxLength={200} />
               </Field>
             </div>

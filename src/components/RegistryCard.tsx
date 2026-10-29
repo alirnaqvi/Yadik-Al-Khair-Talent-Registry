@@ -8,6 +8,7 @@ export interface RegistryCardData {
   currentRole?: string;
   currentCompany?: string;
   city?: string;
+  degree?: string;
   experienceYears?: number | null;
   education?: string;
   skills?: string;
@@ -43,10 +44,11 @@ export function RegistryCard({
   const years = formatYears(data.experienceYears);
   const experience = data.experienceText || (years && `${years} of experience`);
   const mark = sample ? "" : initials(data.fullName ?? "");
+  const education = [data.degree, data.education].filter(Boolean).join(" · ");
 
   return (
     <div className={clsx("relative pt-7", className)}>
-      {/* Folder tab carrying the field */}
+      {/* Folder tab carrying the profession */}
       <div
         className={clsx(
           "absolute left-5 top-0 flex h-8 max-w-[75%] items-center rounded-t-[10px] px-3.5 text-[13px] font-semibold",
@@ -55,7 +57,7 @@ export function RegistryCard({
             : "bg-pine-100 text-pine-400"
         )}
       >
-        <span className="truncate">{data.domain || "Your field"}</span>
+        <span className="truncate">{data.domain || "Your profession"}</span>
       </div>
 
       <div className="relative overflow-hidden rounded-2xl rounded-tl-md border border-line bg-white shadow-card">
@@ -92,9 +94,9 @@ export function RegistryCard({
         </div>
 
         <div className="ruled space-y-0 px-5 pb-2 text-sm">
-          <Line icon={MapPin} value={data.city} placeholder="City" />
+          <Line icon={MapPin} value={data.city} placeholder="Location" />
           <Line icon={Briefcase} value={experience} placeholder="Experience" />
-          <Line icon={GraduationCap} value={data.education} placeholder="Education" />
+          <Line icon={GraduationCap} value={education} placeholder="Degree" />
         </div>
 
         <div className="flex min-h-[44px] flex-wrap items-center gap-1.5 px-5 py-2.5">

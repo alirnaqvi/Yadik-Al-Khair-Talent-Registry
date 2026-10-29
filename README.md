@@ -1,4 +1,4 @@
-# BK Talent Registry
+# Yadik al Khair - Talent Registry
 
 A small web portal for **Bilal Kazmi (BK)** to collect CVs from candidates
 and to search / filter / export them from a private admin dashboard instead
@@ -6,11 +6,15 @@ of managing everything over WhatsApp and email.
 
 - **Landing page (`/`)** — two clearly separated entry points: "I'm a
   candidate" and "I'm BK (admin)".
-- **Candidate form (`/apply`)** — anyone can submit their name, contact
-  details, field/domain, experience, and upload their CV (PDF/DOC/DOCX).
+- **Candidate form (`/apply`)** — anyone can submit their contact details,
+  profession, industry, highest degree, location, gender, age, an optional
+  PWD (person with a disability) tick box, experience, and upload their CV
+  (PDF/DOC/DOCX).
 - **Admin dashboard (`/admin` → `/admin/dashboard`)** — password-protected.
-  Search and filter CVs by domain (e.g. "IT", "Finance"), select multiple
-  candidates, and export either:
+  Search CVs and filter them by **profession, industry, degree, location,
+  gender, age range and PWD**. Filters combine, so "Cybersecurity, Master's
+  degree, Islamabad, aged 25 to 35" is one click each. Select multiple
+  candidates and export either:
   - a **CSV** of their details, or
   - a **ZIP** containing the actual CV files plus a manifest CSV,
   ready to forward to a company.
@@ -107,10 +111,11 @@ src/app/apply/page.tsx         Candidate CV upload page
 src/app/thank-you/page.tsx     Confirmation page after submitting
 src/app/admin/page.tsx         Admin login
 src/app/admin/dashboard/       Admin dashboard (search, filter, export, delete)
-src/app/api/cvs/               POST = submit a CV (public), GET = list CVs (admin only)
+src/app/api/cvs/               POST = submit a CV (public), GET = list/filter CVs (admin only)
+src/app/api/cvs/filters/       Values on file for each admin filter (admin only)
 src/app/api/cvs/[id]/          DELETE a CV (admin only)
 src/app/api/cvs/[id]/file/     Streams one CV file from private Blob storage (admin only)
-src/app/api/domains/           Returns the list of domains for the filter/dropdown
+src/lib/constants.ts           The profession, industry, degree and gender lists
 src/app/api/admin/login/       Checks ADMIN_PASSWORD, sets a signed session cookie
 src/app/api/admin/logout/      Clears the session cookie
 src/app/api/admin/export/      Bundles selected CVs into a CSV or a ZIP
@@ -121,11 +126,18 @@ prisma/schema.prisma           The CV table definition
 
 ## 4. Notes
 
-- **Domains/fields are free text with suggestions.** BK doesn't need to
-  predefine every possible field — candidates can pick from a suggested
-  list (IT, Finance, HR, ...) or type their own, and the admin filter
-  dropdown automatically shows whatever domains actually exist in the
-  database.
+- **Profession, industry, degree and gender are fixed lists** in
+  `src/lib/constants.ts`, so every CV lands in a category BK can filter on.
+  Edit the lists there to add or rename an option. The form and the server
+  both check against them. The admin filters only offer values that exist on
+  file. **Location** stays free text with city suggestions, and matching
+  ignores capital letters.
+- **Updating the database.** After pulling these changes, run
+  `npm run db:push` once against Neon. It adds the new columns (industry,
+  degree, gender, age, PWD); CVs submitted earlier keep working and simply show
+  "Not given" for them.
+- **PWD** is an optional tick box on the form. It is stored as yes/no and
+  appears in the admin filters, the candidate details and the CSV export.
 - **File size limit** is 8 MB per CV (adjust `MAX_FILE_SIZE_BYTES` in
   `src/lib/constants.ts` if needed).
 - **Changing the admin password** just means updating the

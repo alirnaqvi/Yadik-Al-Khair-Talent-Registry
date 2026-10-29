@@ -1,34 +1,54 @@
 "use client";
 
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import {
   AlertCircle,
+  Accessibility,
+  Briefcase,
   CheckCircle2,
   Download,
   ExternalLink,
+  Factory,
   FileArchive,
+  GraduationCap,
   Inbox,
   KeyRound,
   Link2,
   Loader2,
   LogOut,
+  MapPin,
   Search,
   SearchX,
+  Users,
   X,
 } from "lucide-react";
 import { Brand } from "@/components/Brand";
-import { DomainFilter } from "@/components/DomainFilter";
+import { MultiFilter } from "@/components/MultiFilter";
 import { CVTable } from "@/components/CVTable";
 import { Pagination } from "@/components/Pagination";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { Select, inputBase } from "@/components/ui/Field";
-import type { CVItem, CVListResponse } from "@/types/cv";
+import {
+  EMPTY_FILTERS,
+  type CVFilters,
+  type CVItem,
+  type CVListResponse,
+  type FilterOptions,
+} from "@/types/cv";
 
 const PAGE_SIZE = 25;
+
+const NO_OPTIONS: FilterOptions = {
+  professions: [],
+  industries: [],
+  degrees: [],
+  locations: [],
+  genders: [],
+};
 
 type Toast = { id: number; tone: "success" | "error"; message: string };
 
@@ -37,8 +57,10 @@ export default function AdminDashboardPage() {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [domains, setDomains] = useState<string[]>([]);
-  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+  const [options, setOptions] = useState<FilterOptions>(NO_OPTIONS);
+  const [filters, setFilters] = useState<CVFilters>(EMPTY_FILTERS);
+  // Age is typed, so it waits for a pause before the list reloads.
+  const [debouncedAge, setDebouncedAge] = useState({ min: "", max: "" });
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
 
@@ -70,30 +92,51 @@ export default function AdminDashboardPage() {
     return () => clearTimeout(t);
   }, [search]);
 
+  useEffect(() => {
+    const t = setTimeout(
+      () => setDebouncedAge({ min: filters.ageMin.trim(), max: filters.ageMax.trim() }),
+      350
+    );
+    return () => clearTimeout(t);
+  }, [filters.ageMin, filters.ageMax]);
+
+  // Everything that narrows the list, as the query string the API reads.
+  const filterQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (filters.professions.length) params.set("domains", filters.professions.join(","));
+    if (filters.industries.length) params.set("industries", filters.industries.join(","));
+    if (filters.degrees.length) params.set("degrees", filters.degrees.join(","));
+    if (filters.locations.length) params.set("locations", filters.locations.join(","));
+    if (filters.genders.length) params.set("genders", filters.genders.join(","));
+    if (debouncedAge.min) params.set("ageMin", debouncedAge.min);
+    if (debouncedAge.max) params.set("ageMax", debouncedAge.max);
+    if (filters.pwdOnly) params.set("pwd", "1");
+    params.set("sort", sort);
+    return params.toString();
+  }, [debouncedSearch, filters, debouncedAge, sort]);
+
   // Reset to page 1 whenever filters change.
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, selectedDomains, sort]);
+  }, [filterQuery]);
 
-  const loadDomains = useCallback(() => {
-    fetch("/api/domains")
-      .then((res) => res.json())
-      .then((d) => setDomains(d.existing ?? []))
-      .catch(() => setDomains([]));
+  const loadOptions = useCallback(() => {
+    fetch("/api/cvs/filters")
+      .then((res) => (res.ok ? res.json() : NO_OPTIONS))
+      .then((o) => setOptions({ ...NO_OPTIONS, ...o }))
+      .catch(() => setOptions(NO_OPTIONS));
   }, []);
 
   useEffect(() => {
-    loadDomains();
-  }, [loadDomains]);
+    loadOptions();
+  }, [loadOptions]);
 
   const loadCvs = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams();
-      if (debouncedSearch) params.set("search", debouncedSearch);
-      if (selectedDomains.length) params.set("domains", selectedDomains.join(","));
-      params.set("sort", sort);
+      const params = new URLSearchParams(filterQuery);
       params.set("page", String(page));
       params.set("pageSize", String(PAGE_SIZE));
 
@@ -113,7 +156,7 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, selectedDomains, sort, page, router]);
+  }, [filterQuery, page, router]);
 
   useEffect(() => {
     loadCvs();
@@ -141,10 +184,15 @@ export default function AdminDashboardPage() {
     });
   }
 
+  function setFilter<K extends keyof CVFilters>(key: K, value: CVFilters[K]) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }
+
   function clearFilters() {
     setSearch("");
     setDebouncedSearch("");
-    setSelectedDomains([]);
+    setFilters(EMPTY_FILTERS);
+    setDebouncedAge({ min: "", max: "" });
   }
 
   async function confirmDelete() {
@@ -166,7 +214,7 @@ export default function AdminDashboardPage() {
       setPendingDelete(null);
       notify("success", `Deleted ${item.fullName}'s CV`);
       loadCvs();
-      loadDomains();
+      loadOptions();
     } catch {
       setDeleteError("Couldn't reach the server, so the CV wasn't deleted. Try again.");
     } finally {
@@ -193,7 +241,7 @@ export default function AdminDashboardPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `bk-cv-export-${Date.now()}.${format === "csv" ? "csv" : "zip"}`;
+      a.download = `yadik-al-khair-cv-export-${Date.now()}.${format === "csv" ? "csv" : "zip"}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -225,7 +273,42 @@ export default function AdminDashboardPage() {
     router.push("/admin");
   }
 
-  const hasFilters = Boolean(debouncedSearch) || selectedDomains.length > 0;
+  // One chip per active filter, each able to remove itself.
+  const chips: { key: string; label: string; remove: () => void }[] = [];
+  const listChips = (
+    prefix: string,
+    field: "professions" | "industries" | "degrees" | "locations" | "genders"
+  ) =>
+    filters[field].forEach((value) =>
+      chips.push({
+        key: `${field}:${value}`,
+        label: `${prefix}: ${value}`,
+        remove: () =>
+          setFilter(
+            field,
+            filters[field].filter((x) => x !== value)
+          ),
+      })
+    );
+  if (debouncedSearch)
+    chips.push({ key: "search", label: `Search: ${debouncedSearch}`, remove: () => setSearch("") });
+  listChips("Profession", "professions");
+  listChips("Industry", "industries");
+  listChips("Degree", "degrees");
+  listChips("Location", "locations");
+  listChips("Gender", "genders");
+  if (debouncedAge.min || debouncedAge.max) {
+    const { min, max } = debouncedAge;
+    chips.push({
+      key: "age",
+      label: min && max ? `Age: ${min} to ${max}` : min ? `Age: ${min} or older` : `Age: up to ${max}`,
+      remove: () => setFilters((prev) => ({ ...prev, ageMin: "", ageMax: "" })),
+    });
+  }
+  if (filters.pwdOnly)
+    chips.push({ key: "pwd", label: "PWD only", remove: () => setFilter("pwdOnly", false) });
+
+  const hasFilters = chips.length > 0;
   const total = data?.total ?? 0;
   const items = data?.items ?? [];
   const selectedCount = selectedIds.size;
@@ -291,7 +374,7 @@ export default function AdminDashboardPage() {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, email, skills, role, company or city"
+              placeholder="Search name, email, skills, role, company, location or education"
               aria-label="Search candidates"
               className={clsx(
                 inputBase,
@@ -310,8 +393,6 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          <DomainFilter options={domains} selected={selectedDomains} onChange={setSelectedDomains} />
-
           <Select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
@@ -325,18 +406,103 @@ export default function AdminDashboardPage() {
           </Select>
         </div>
 
+        {/* Segregation filters: each one narrows the list further */}
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <MultiFilter
+            icon={Briefcase}
+            label="Profession"
+            pluralLabel="professions"
+            options={options.professions}
+            selected={filters.professions}
+            onChange={(next) => setFilter("professions", next)}
+          />
+          <MultiFilter
+            icon={Factory}
+            label="Industry"
+            pluralLabel="industries"
+            options={options.industries}
+            selected={filters.industries}
+            onChange={(next) => setFilter("industries", next)}
+          />
+          <MultiFilter
+            icon={GraduationCap}
+            label="Degree"
+            pluralLabel="degrees"
+            options={options.degrees}
+            selected={filters.degrees}
+            onChange={(next) => setFilter("degrees", next)}
+          />
+          <MultiFilter
+            icon={MapPin}
+            label="Location"
+            pluralLabel="locations"
+            options={options.locations}
+            selected={filters.locations}
+            onChange={(next) => setFilter("locations", next)}
+          />
+          <MultiFilter
+            icon={Users}
+            label="Gender"
+            pluralLabel="genders"
+            options={options.genders}
+            selected={filters.genders}
+            onChange={(next) => setFilter("genders", next)}
+          />
+
+          <div
+            role="group"
+            aria-label="Age range"
+            className="flex h-11 items-center gap-2 rounded-[10px] border border-pine-200 bg-white px-3.5 text-[15px] focus-within:border-pine-500 focus-within:ring-4 focus-within:ring-pine-500/15"
+          >
+            <span className={clsx(filters.ageMin || filters.ageMax ? "font-semibold text-pine-900" : "text-ink")}>
+              Age
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              value={filters.ageMin}
+              onChange={(e) => setFilter("ageMin", e.target.value.replace(/\D/g, ""))}
+              placeholder="From"
+              aria-label="Minimum age"
+              className="w-12 bg-transparent text-center placeholder:text-pine-300 focus:outline-none"
+            />
+            <span className="text-muted" aria-hidden>
+              to
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              value={filters.ageMax}
+              onChange={(e) => setFilter("ageMax", e.target.value.replace(/\D/g, ""))}
+              placeholder="To"
+              aria-label="Maximum age"
+              className="w-12 bg-transparent text-center placeholder:text-pine-300 focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="button"
+            aria-pressed={filters.pwdOnly}
+            onClick={() => setFilter("pwdOnly", !filters.pwdOnly)}
+            className={clsx(
+              "inline-flex h-11 items-center gap-2 rounded-[10px] border px-3.5 text-[15px] font-medium transition-colors",
+              filters.pwdOnly
+                ? "border-pine-800 bg-pine-800 text-white"
+                : "border-pine-200 bg-white text-ink hover:border-pine-300"
+            )}
+          >
+            <Accessibility className="h-4 w-4" aria-hidden />
+            PWD only
+          </button>
+        </div>
+
         {/* Active filters */}
         {hasFilters && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {debouncedSearch && (
-              <FilterChip label={`Search: ${debouncedSearch}`} onRemove={() => setSearch("")} />
-            )}
-            {selectedDomains.map((d) => (
-              <FilterChip
-                key={d}
-                label={d}
-                onRemove={() => setSelectedDomains(selectedDomains.filter((x) => x !== d))}
-              />
+            {chips.map((chip) => (
+              <FilterChip key={chip.key} label={chip.label} onRemove={chip.remove} />
             ))}
             <button
               type="button"

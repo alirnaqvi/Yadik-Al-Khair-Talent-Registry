@@ -67,9 +67,9 @@ export default async function OpengraphImage() {
                 fontWeight: 800,
               }}
             >
-              {SITE.shortName}
+              {SITE.monogram}
             </div>
-            <div style={{ fontSize: 28, color: "#B5D2C4" }}>Talent Registry</div>
+            <div style={{ fontSize: 28, color: "#B5D2C4" }}>{SITE.name}</div>
           </div>
 
           <div

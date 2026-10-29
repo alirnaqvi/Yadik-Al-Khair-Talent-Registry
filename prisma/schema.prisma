@@ -15,14 +15,21 @@ model CV {
   fullName        String
   email           String
   phone           String?
-  domain          String   // e.g. IT, Finance, HR, Marketing, Operations
+  domain          String   // The candidate's profession (shown as "Profession" in the UI)
   experienceYears Int?
   currentRole     String?
   currentCompany  String?
-  education       String?
+  education       String?  // free text: field of study, institution, year
   skills          String?  // free-text, comma separated
-  city            String?
+  city            String?  // shown as "Location" in the UI
   notes           String?  // internal notes BK can add later
+
+  // Segregation fields. Nullable so CVs submitted before these existed stay valid.
+  industry        String?
+  degree          String?  // qualification level, e.g. "Bachelor's degree"
+  gender          String?
+  age             Int?
+  pwd             Boolean  @default(false) // person with a disability
 
   // Uploaded file (stored in a private Vercel Blob store).
   // filePathname is what's passed to the Blob SDK's get() to read the file back --
@@ -37,6 +44,11 @@ model CV {
   updatedAt       DateTime @updatedAt
 
   @@index([domain])
+  @@index([industry])
+  @@index([degree])
+  @@index([gender])
+  @@index([age])
+  @@index([pwd])
   @@index([createdAt])
   @@index([fullName])
 }

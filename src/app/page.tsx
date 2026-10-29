@@ -10,11 +10,11 @@ import { FEATURED_DOMAINS, SITE } from "@/lib/site";
 const steps = [
   {
     title: "Fill in a short form",
-    body: "Your name, email, field and CV are all that's required. The optional details help Bilal match you faster.",
+    body: "Your contact details, profession, industry, degree, location, gender, age and CV. The rest is optional, and helps Bilal match you faster.",
   },
   {
     title: "Your CV goes on file",
-    body: "It's filed under your field, so it comes up every time Bilal searches for that kind of role.",
+    body: "It's filed under your profession and industry, so it comes up every time Bilal searches for that kind of role.",
   },
   {
     title: "Bilal contacts you when a role fits",
@@ -69,12 +69,12 @@ export default function LandingPage() {
               className="relative"
               data={{
                 fullName: "Your name",
-                domain: "Your field",
+                domain: "Your profession",
                 currentRole: "Your role",
                 currentCompany: "your company",
-                city: "Your city",
+                city: "Your location",
                 experienceText: "Your years of experience",
-                education: "Your degree",
+                degree: "Your degree",
                 skills: "Your, key, skills",
                 fileName: "Your CV.pdf",
               }}
@@ -133,11 +133,11 @@ export default function LandingPage() {
               id="fields-heading"
               className="font-display text-3xl font-bold tracking-tight sm:text-4xl"
             >
-              Pick your field to start
+              Pick your profession to start
             </h2>
             <p className="mt-3 max-w-[56ch] text-pine-100">
-              Choose the field closest to your work. If yours isn&apos;t here,
-              you can type it in on the form.
+              Choose the profession closest to your work. The form lists
+              every option, including ones not shown here.
             </p>
             <ul className="mt-8 flex flex-wrap gap-2.5">
               {FEATURED_DOMAINS.map((domain) => (
@@ -155,7 +155,7 @@ export default function LandingPage() {
                   href="/apply"
                   className="inline-flex h-11 items-center rounded-full border border-dashed border-white/40 px-5 text-[15px] font-medium text-pine-100 transition-colors hover:border-white hover:text-white"
                 >
-                  Another field
+                  See all professions
                 </Link>
               </li>
             </ul>
@@ -181,7 +181,7 @@ export default function LandingPage() {
                   className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-pine-800 font-display text-xl font-bold text-marigold-300"
                   aria-hidden
                 >
-                  {SITE.shortName}
+                  {owner.initials}
                 </div>
               )}
               <div>

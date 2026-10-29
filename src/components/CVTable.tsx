@@ -48,6 +48,17 @@ function FieldPill({ children }: { children: string }) {
   );
 }
 
+function PwdBadge() {
+  return (
+    <span
+      className="inline-flex items-center rounded-full bg-pine-100 px-2 py-0.5 text-[11px] font-semibold text-pine-800"
+      title="Person with a disability"
+    >
+      PWD
+    </span>
+  );
+}
+
 function Received({ iso }: { iso: string }) {
   const label = formatRelativeDate(iso);
   const isNew = label === "Today";
@@ -72,8 +83,29 @@ function openCvHref(item: CVItem) {
 /** Everything the list row doesn't have room for. */
 function Details({ item }: { item: CVItem }) {
   const skills = splitSkills(item.skills);
+  const profile: [string, string | null][] = [
+    ["Industry", item.industry],
+    ["Degree", item.degree],
+    ["Gender", item.gender],
+    ["Age", item.age !== null ? String(item.age) : null],
+  ];
   return (
-    <dl className="grid gap-x-8 gap-y-4 text-sm xl:grid-cols-[1.1fr_1fr_1.4fr]">
+    <dl className="grid gap-x-8 gap-y-4 text-sm xl:grid-cols-[1.1fr_1.1fr_1fr_1.3fr]">
+      <div>
+        <dt className="font-semibold text-pine-900">Profile</dt>
+        <dd className="mt-1.5 space-y-1">
+          {profile.map(([label, value]) => (
+            <p key={label} className="flex gap-2">
+              <span className="w-16 shrink-0 text-muted">{label}</span>
+              <span className={value ? "text-ink" : "text-muted"}>{value || "Not given"}</span>
+            </p>
+          ))}
+          <p className="flex gap-2">
+            <span className="w-16 shrink-0 text-muted">PWD</span>
+            <span className="text-ink">{item.pwd ? "Yes" : "No"}</span>
+          </p>
+        </dd>
+      </div>
       <div>
         <dt className="font-semibold text-pine-900">Contact</dt>
         <dd className="mt-1.5 space-y-1.5">
@@ -101,7 +133,7 @@ function Details({ item }: { item: CVItem }) {
         </dd>
       </div>
       <div>
-        <dt className="font-semibold text-pine-900">Education</dt>
+        <dt className="font-semibold text-pine-900">Education details</dt>
         <dd className={clsx("mt-1.5", item.education ? "text-ink" : "text-muted")}>
           {item.education || "Not given"}
         </dd>
@@ -197,10 +229,10 @@ export function CVTable({
                 />
               </th>
               <th scope="col" className="px-3 py-3 font-semibold">Candidate</th>
-              <th scope="col" className="px-3 py-3 font-semibold">Field</th>
+              <th scope="col" className="px-3 py-3 font-semibold">Profession</th>
               <th scope="col" className="px-3 py-3 font-semibold">Current role</th>
               <th scope="col" className="px-3 py-3 font-semibold">Experience</th>
-              <th scope="col" className="px-3 py-3 font-semibold">City</th>
+              <th scope="col" className="px-3 py-3 font-semibold">Location</th>
               <th scope="col" className="px-3 py-3 font-semibold">Received</th>
               <th scope="col" className="px-3 py-3">
                 <span className="sr-only">Actions</span>
@@ -233,14 +265,17 @@ export function CVTable({
                       <div className="flex items-center gap-3">
                         <Avatar name={item.fullName} />
                         <div className="min-w-0">
-                          <button
-                            type="button"
-                            onClick={() => toggleExpanded(item.id)}
-                            aria-expanded={isOpen}
-                            className="block max-w-full truncate rounded text-left font-semibold text-pine-900 hover:underline"
-                          >
-                            {item.fullName}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpanded(item.id)}
+                              aria-expanded={isOpen}
+                              className="block min-w-0 truncate rounded text-left font-semibold text-pine-900 hover:underline"
+                            >
+                              {item.fullName}
+                            </button>
+                            {item.pwd && <PwdBadge />}
+                          </div>
                           <p className="truncate text-[13px] text-muted">{item.email}</p>
                         </div>
                       </div>
@@ -342,7 +377,11 @@ export function CVTable({
           {items.map((item) => {
             const isOpen = expanded === item.id;
             const isSelected = selected.has(item.id);
-            const meta = [item.city, formatYears(item.experienceYears)].filter(Boolean);
+            const meta = [
+              item.city,
+              formatYears(item.experienceYears),
+              item.age !== null ? `Age ${item.age}` : "",
+            ].filter(Boolean);
             return (
               <li
                 key={item.id}
@@ -374,6 +413,7 @@ export function CVTable({
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted">
                   <FieldPill>{item.domain}</FieldPill>
+                  {item.pwd && <PwdBadge />}
                   {meta.map((m) => (
                     <span key={m}>{m}</span>
                   ))}
