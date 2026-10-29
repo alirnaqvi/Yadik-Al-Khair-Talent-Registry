@@ -62,7 +62,7 @@ export const SITE = {
 
   // Used for link previews (LinkedIn, WhatsApp). Change it if the site moves
   // to a custom domain.
-  url: "https://bk-cv-portal.vercel.app",
+  url: "https://yadik-talent-registry.vercel.app",
 
   description:
     "Send your CV to Bilal Kazmi once. It stays on file and is considered whenever a role in your field opens.",
