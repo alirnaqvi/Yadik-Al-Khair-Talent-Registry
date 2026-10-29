@@ -1,6 +1,15 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Clock, FileText, Linkedin, Lock, Send, UserCheck } from "lucide-react";
+import {
+  Clock,
+  FileText,
+  Instagram,
+  Linkedin,
+  Lock,
+  MessageCircle,
+  Send,
+  UserCheck,
+} from "lucide-react";
 import { BrandMark } from "@/components/Brand";
 import { RegistryCard } from "@/components/RegistryCard";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -23,7 +32,7 @@ const steps = [
 ];
 
 export default function LandingPage() {
-  const { owner } = SITE;
+  const { owner, org } = SITE;
   const removalRoute = SITE.contactEmail
     ? `email ${SITE.contactEmail}`
     : `message ${owner.firstName} on LinkedIn`;
@@ -235,6 +244,62 @@ export default function LandingPage() {
                 removed, {removalRoute}.
               </Assurance>
             </ul>
+          </div>
+        </section>
+
+        {/* The organisation behind the registry */}
+        <section className="border-t border-line bg-white" aria-labelledby="about-heading">
+          <div className="mx-auto w-full max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+            <h2
+              id="about-heading"
+              className="font-display text-2xl font-bold tracking-tight text-pine-900 sm:text-3xl"
+            >
+              About {org.name}
+            </h2>
+            <div className="mt-5 max-w-[64ch] space-y-3 leading-relaxed text-muted">
+              {org.summary.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+            <ul className="mt-5 flex flex-wrap gap-2" aria-label={`Facts about ${org.name}`}>
+              {org.facts.map((fact) => (
+                <li
+                  key={fact}
+                  className="rounded-full bg-pine-100 px-3 py-1.5 text-sm font-medium text-pine-800"
+                >
+                  {fact}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href={org.links.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonClasses("secondary", "md")}
+              >
+                <Instagram className="h-4 w-4" aria-hidden />
+                Instagram
+              </a>
+              <a
+                href={org.links.whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonClasses("secondary", "md")}
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                WhatsApp channel
+              </a>
+              <a
+                href={org.links.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonClasses("secondary", "md")}
+              >
+                <Linkedin className="h-4 w-4" aria-hidden />
+                LinkedIn
+              </a>
+            </div>
           </div>
         </section>
       </main>

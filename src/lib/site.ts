@@ -41,6 +41,21 @@ export const SITE = {
     photo: "/bilal.jpg",
   },
 
+  // The organisation behind the registry, shown in "About" on the landing page.
+  org: {
+    name: "Yadik al Khair",
+    summary: [
+      "Yadik al Khair is a pro bono nonprofit dedicated to spreading benevolence and providing relief to the underprivileged. Its mission is to ease the lives of all living beings through personal contributions, volunteer efforts and donations from kind-hearted people.",
+      "Starting from Rawalpindi and Islamabad, Pakistan, it works on the belief that everyone deserves kindness without discrimination.",
+    ],
+    facts: ["Nonprofit", "Founded 2023", "Based in Islamabad"],
+    links: {
+      instagram: "https://instagram.com/yadik_al_khair",
+      whatsapp: "https://whatsapp.com/channel/0029VasP7qPEquiXXxL5DP3V",
+      linkedin: "https://www.linkedin.com/company/yadik-al-khair/",
+    },
+  },
+
   // Where candidates write to have their details corrected or removed.
   // Leave empty to point them to LinkedIn instead.
   contactEmail: "",
